@@ -44,7 +44,7 @@ def load_model1_df():
     Load BIXI_MODEL.csv used to train Model 1.
     Used only for the historical plots (not for prediction).
     """
-    df = pd.read_csv("BIXI_MODEL.csv")
+    df = pd.read_parquet("BIXI_MODEL.parquet")
     df["datetime"] = pd.to_datetime(df["datetime"], errors="coerce")
     df = df.dropna(subset=["datetime"])
     # Ensure month / hour / date exist
