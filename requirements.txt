@@ -1,8 +1,8 @@
-pydeck
-matplotlib
-joblib
-seaborn
-numpy==1.26.4
+streamlit==1.37.1
 pandas==2.2.2
-scikit-learn==1.5.0
-streamlit==1.36.0
+numpy==1.26.4
+scikit-learn==1.5.2
+pydeck==0.8.0
+matplotlib==3.9.2
+joblib==1.4.2
+seaborn==0.13.2
