@@ -5,6 +5,7 @@ import joblib
 import pickle
 import datetime as dt
 import pydeck as pdk
+from myclass import myClass
 
 # -------------------------------------------------
 # GLOBAL PAGE CONFIG
@@ -17,8 +18,8 @@ st.set_page_config(page_title="BIXI Demand Analytics Dashboard", layout="wide")
 @st.cache_resource
 def load_model1_assets():
     """Loads Model 1 models + meta once."""
-    mlr_pipe = joblib.load("model1_mlr_pipeline.pkl")
-    rf_model = joblib.load("model1_rf.pkl")
+    mlr_pipe = pd.read_pickle("model1_mlr_pipeline.pkl")
+    rf_model = pd.read_pickle("model1_rf.pkl")
     with open("model1_meta.pkl", "rb") as f:
         meta = pickle.load(f)
     return mlr_pipe, rf_model, meta
@@ -282,8 +283,8 @@ def render_model1_page():
 # =================================================
 @st.cache_resource
 def load_model2_assets():
-    mlr_pipe = joblib.load("model2_mlr_pipeline.pkl")
-    rf_model = joblib.load("model2_rf.pkl")
+    mlr_pipe = pd.read_pickle("model2_mlr_pipeline.pkl")
+    rf_model = pd.read_pickle("model2_rf.pkl")
     with open("bixi_meta.pkl", "rb") as f:
         meta = pickle.load(f)
     return mlr_pipe, rf_model, meta
