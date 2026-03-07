@@ -5,6 +5,12 @@ import joblib
 import pickle
 import datetime as dt
 import pydeck as pdk
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+MODELS_DIR = PROJECT_ROOT / "models"
+DATA_PROCESSED_DIR = PROJECT_ROOT / "data" / "processed"
+ARTIFACTS_DIR = PROJECT_ROOT / "artifacts"
 
 # -------------------------------------------------
 # GLOBAL PAGE CONFIG
@@ -17,9 +23,9 @@ st.set_page_config(page_title="BIXI Demand Analytics Dashboard", layout="wide")
 @st.cache_resource
 def load_model1_assets():
     """Loads Model 1 models + meta once."""
-    mlr_pipe = joblib.load("model1_mlr_pipeline.pkl")
-    rf_model = joblib.load("model1_rf.pkl")
-    with open("model1_meta.pkl", "rb") as f:
+    mlr_pipe = joblib.load(MODELS_DIR / "model1_mlr_pipeline.pkl")
+    rf_model = joblib.load(MODELS_DIR / "model1_rf.pkl")
+    with open(MODELS_DIR / "model1_meta.pkl", "rb") as f:
         meta = pickle.load(f)
     return mlr_pipe, rf_model, meta
 
@@ -27,7 +33,7 @@ def load_model1_assets():
 @st.cache_resource
 def load_model1_df():
     """Loads BIXI_MODEL data for Model 1 history plots."""
-    df = pd.read_parquet("BIXI_MODEL.parquet")
+    df = pd.read_parquet(DATA_PROCESSED_DIR / "BIXI_MODEL.parquet")
     df["datetime"] = pd.to_datetime(df["datetime"], errors="coerce")
     df = df.dropna(subset=["datetime"])
     if "month" not in df.columns:
@@ -282,9 +288,9 @@ def render_model1_page():
 # =================================================
 @st.cache_resource
 def load_model2_assets():
-    mlr_pipe = joblib.load("model2_mlr_pipeline.pkl")
-    rf_model = joblib.load("model2_rf.pkl")
-    with open("bixi_meta.pkl", "rb") as f:
+    mlr_pipe = joblib.load(MODELS_DIR / "model2_mlr_pipeline.pkl")
+    rf_model = joblib.load(MODELS_DIR / "model2_rf.pkl")
+    with open(MODELS_DIR / "bixi_meta.pkl", "rb") as f:
         meta = pickle.load(f)
     return mlr_pipe, rf_model, meta
 
@@ -487,7 +493,7 @@ def render_model2_page():
 # =================================================
 @st.cache_resource
 def load_station_clusters():
-    return pd.read_csv("station_clusters_model1.csv")
+    return pd.read_csv(ARTIFACTS_DIR / "station_clusters_model1.csv")
 
 
 def render_clusters_page():
