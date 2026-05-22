@@ -1,94 +1,124 @@
 <div align="center">
 
-# 🚲 BIXI Demand Forecasting App
+<img src="images/app-clusters.png" alt="BIXI Demand Dashboard" width="100%"/>
 
-**Predicting Montreal bike-share demand with machine learning**
+# 🚲 BIXI Station Hourly Demand Dashboard
+
+**An end-to-end machine learning project predicting bike-share demand across Montreal**
 
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-app-FF4B4B?style=flat-square&logo=streamlit&logoColor=white)](https://streamlit.io/)
 [![scikit-learn](https://img.shields.io/badge/scikit--learn-1.5.1-F7931E?style=flat-square&logo=scikitlearn&logoColor=white)](https://scikit-learn.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-19467E?style=flat-square)](LICENSE)
+[![Open-Meteo](https://img.shields.io/badge/Open--Meteo-weather%20API-00B4D8?style=flat-square)](https://open-meteo.com/)
 
 </div>
 
 ---
 
-## 🗺️ Live interactive map
+## What this project does
 
-**[→ Open station demand map](https://YOUR_GITHUB_USERNAME.github.io/bixi-demand-app/map.html)**
+BIXI is Montreal's public bike-share system. This project builds a **full ML pipeline** — from 13 million raw trip records to a live interactive dashboard — that answers:
 
-Full deck.gl map with heatmap + scatter layers, hover tooltips, zoom, and 45° tilt — same rendering engine as the Streamlit app. Enable GitHub Pages from `Settings → Pages → Source: main / docs` to activate the link.
+> *How many trips will a given station see in the next hour, given the date, time, and weather?*
 
----
-
-## What is this?
-
-[BIXI](https://bixi.com) is Montreal's public bike-share system with hundreds of stations across the city. This project builds an **end-to-end demand analytics pipeline** — from raw trip data to an interactive Streamlit dashboard — that answers two questions:
-
-1. **How many trips will a given station see in the next hour?** (given date, time, and weather)
-2. **Which stations are high, medium, or low demand?** (geospatial clustering across the network)
+It covers the entire data science workflow: data cleaning at scale, feature engineering, model training and comparison, station clustering, and a polished multi-view Streamlit app with real-time weather integration.
 
 ---
 
-## App overview
+## The app
 
 The dashboard has three views:
 
-### Model 1 — Station-level prediction + demand history
-- Predicts hourly trip count for a selected station, date, and hour
-- Choose between a **Linear Regression pipeline** or **Random Forest**
-- Plots historical temperature vs. demand for that station
-- Applies seasonality guardrails (BIXI operates May through October)
+### 🗺️ Station Demand Clusters
 
-### Model 2 — Prediction with historical averages
-- Extends Model 1 with **station-level demand priors** (hourly and day-of-week averages)
-- Better calibrated for station-specific patterns
-- Same two model families available
+<img src="images/app-clusters.png" alt="Station Demand Clusters" width="100%"/>
 
-### Clusters — Demand segmentation map
-- Displays stations colored by cluster: 🔴 High / 🟡 Medium / 🔵 Low
-- Interactive map powered by **pydeck**
-- Cluster summary statistics by segment
+Stations are grouped into **3 clusters** (low / medium / high) based on their average hourly demand across 2024. The pydeck heatmap shows where demand concentrates across the city — the downtown core glows red, residential neighborhoods stay cool blue.
 
 ---
 
-## Visuals
+### ⚡ 16-Day Demand Forecast
 
-### Average demand by hour of day
+<img src="images/app-forecast-single.png" alt="16-Day Forecast - Single Point" width="100%"/>
 
-The data shows two clear commute peaks: a morning spike around **8 am** and an evening peak around **5 pm**, with low overnight activity.
+Select a station, date, and hour — the app fetches **real-time weather** from the Open-Meteo API and runs it through the trained Random Forest to predict demand. Temperature, feels-like, wind speed, and a bad-weather flag are all pulled live.
 
-![Average BIXI demand by hour](docs/images/hourly-demand-profile.png)
+<img src="images/app-forecast-day.png" alt="16-Day Forecast - Full Day" width="100%"/>
 
-### Station demand clusters across Montreal
-
-High-demand stations (red) concentrate in the downtown core — Vieux-Port, Plateau, and the Lachine Canal corridor — while lower-demand blue stations spread into residential neighborhoods.
-
-**[→ Open the interactive version](https://YOUR_GITHUB_USERNAME.github.io/bixi-demand-app/map.html)** — hover stations, scroll to zoom, right-drag to tilt.
-
-![BIXI station demand clusters](docs/images/station-demand-clusters-map.png)
+Switch to **Prediction for a Day** to get the full 24-hour demand curve with a dual-axis temperature overlay — useful for seeing morning and evening commute peaks at a glance.
 
 ---
 
-## Modeling approach
+### 🎛️ Custom Inputs Forecast
 
-### Feature engineering
-| Feature type | Examples |
+<img src="images/app-custom.png" alt="Custom Inputs Forecast" width="100%"/>
+
+Manually set any weather scenario and run predictions with either the MLR pipeline or Random Forest. Good for exploring what-if conditions: *What happens to demand at Berri-UQAM on a hot Friday evening vs. a rainy Tuesday morning?*
+
+---
+
+## How it was built
+
+### 1. Data pipeline
+
+Starting from raw BIXI open data for the full 2024 season (May–October):
+
+- **13.2 million trip records** cleaned: nulls dropped, duration outliers removed (z-score), trips filtered to the top 400 stations by total demand
+- **Montreal hourly weather data** merged on datetime: temperature, wind speed, relative humidity, visibility
+- `bad_weather` engineered as `humidity > 85% AND visibility < 10,000 m`
+- Final model dataset: hourly demand per station, joined with weather and station coordinates
+
+### 2. Feature engineering
+
+| Feature | Description |
 |---|---|
-| Temporal | `hour_sin`, `hour_cos` (cyclical), `day_of_week`, `is_weekend`, `is_holiday` |
-| Weather | Temperature, scaled to training distribution |
-| Station | Station ID, historical demand averages (Model 2 only) |
+| `hour_sin`, `hour_cos` | Cyclical hour encoding (no ordinal gap between 23→0) |
+| `is_weekend`, `is_holiday` | Binary flags |
+| `bad_weather` | Humidity + visibility threshold |
+| `temperature_scaled` | Z-score normalised |
+| `temp_hour`, `temperature_sq` | Interaction + non-linear weather terms |
+| `hour_bucket` | night / morning / day / evening / late |
+| `avg_hourly_demand_station` | Station-level historical prior (Model 2 only) |
+| `avg_dayofweek_station` | Day-of-week prior (Model 2 only) |
 
-### Models
-| Model | Algorithm | Key characteristic |
+### 3. Models
+
+Two families, each trained with and without station historical priors:
+
+| | Model 1 | Model 2 |
 |---|---|---|
-| Model 1 - MLR | Linear Regression pipeline | Fast, interpretable baseline |
-| Model 1 - RF | Random Forest | Captures non-linear patterns |
-| Model 2 - MLR | Linear Regression + demand priors | Station-calibrated |
-| Model 2 - RF | Random Forest + demand priors | Best station-specific accuracy |
+| **Features** | Temporal + weather + station | Model 1 + historical demand averages |
+| **MLR** | Scikit-learn pipeline with OHE | Same + demand priors |
+| **Random Forest** | Station-encoded, full feature set | Best station-specific accuracy |
 
-### Clustering
-Stations are grouped into **low / medium / high** demand categories based on historical average trip counts, precomputed and stored as `artifacts/station_clusters_model1.pkl`.
+### 4. Clustering
+
+KMeans (k=3) on station average demand → **low / medium / high** labels used for the heatmap view.
+
+| Cluster | Stations | Avg demand | Range |
+|---|---|---|---|
+| Low | 247 | 7.4 trips/hr | 4.2 – 9.8 |
+| Medium | 120 | 12.2 trips/hr | 9.8 – 15.6 |
+| High | 33 | 19.1 trips/hr | 15.7 – 28.1 |
+
+---
+
+## Getting started
+
+```bash
+git clone https://github.com/YOUR_USERNAME/bixi-demand-app.git
+cd bixi-demand-app
+
+python -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+
+streamlit run src/app.py
+```
+
+> Python 3.12 required. See `runtime.txt`.
+
+A `.devcontainer` config is included for VS Code / GitHub Codespaces — opens directly with Streamlit running.
 
 ---
 
@@ -96,76 +126,26 @@ Stations are grouped into **low / medium / high** demand categories based on his
 
 ```
 bixi-demand-app/
-├── src/
-│   └── app.py                  # Streamlit entrypoint
+├── src/app.py                  # Streamlit dashboard (all views)
 ├── models/                     # Trained model artifacts (.pkl)
 ├── artifacts/                  # Station cluster assignments
 ├── data/
-│   ├── processed/              # Model-ready parquet dataset
-│   └── external/               # Weather data (Montreal)
-├── notebooks/                  # Training and analysis workflows
+│   ├── processed/              # BIXI_MODEL.parquet (model-ready dataset)
+│   └── external/               # Montreal weather CSVs
+├── notebooks/
 │   ├── BIXI_Data_Cleaning.ipynb
 │   ├── BIXI_Model_1.ipynb
 │   ├── BIXI_Model_2.ipynb
 │   └── BIXI_Model_Clustering.ipynb
-├── docs/images/                # Charts and visuals
-├── requirements.txt
-└── runtime.txt                 # Python 3.12
+├── docs/images/                # App screenshots & visuals
+└── requirements.txt
 ```
-
----
-
-## Getting started
-
-**Requirements:** Python 3.12
-
-```bash
-# 1. Clone the repo
-git clone https://github.com/YOUR_USERNAME/bixi-demand-app.git
-cd bixi-demand-app
-
-# 2. Set up a virtual environment
-python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
-
-# 3. Install dependencies
-pip install -r requirements.txt
-
-# 4. Run the app
-streamlit run src/app.py
-```
-
-The app resolves all data and model paths from the project root via `pathlib`, so it works regardless of your working directory.
-
-### Dev container
-
-A `.devcontainer` config is included for VS Code / GitHub Codespaces. It auto-opens `README.md` and `src/app.py` and launches Streamlit on startup.
 
 ---
 
 ## Tech stack
 
-| Layer | Tools |
-|---|---|
-| App framework | Streamlit |
-| ML / modeling | scikit-learn, pandas, numpy |
-| Map visualization | pydeck |
-| Data storage | Parquet (pyarrow) |
-| Runtime | Python 3.12 |
-
----
-
-## Known limitations & next steps
-
-- Training is notebook-driven — no single scripted training pipeline yet
-- Models are constrained to the BIXI operating season (May–October)
-- No automated experiment tracking or data versioning
-
-**Planned improvements:**
-- [ ] Reproducible CLI training scripts in `src/train/`
-- [ ] Automated tests for feature builders and inference shape checks
-- [ ] Model performance report (metrics + error slices)
-- [ ] CI pipeline for linting, tests, and app smoke checks
+`Python 3.12` · `Streamlit` · `scikit-learn` · `pandas` · `pydeck` · `Open-Meteo API` · `pyarrow`
 
 ---
 
