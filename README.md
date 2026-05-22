@@ -13,6 +13,14 @@
 
 ---
 
+## 🗺️ Live interactive map
+
+**[→ Open station demand map](https://YOUR_GITHUB_USERNAME.github.io/bixi-demand-app/map.html)**
+
+Full deck.gl map with heatmap + scatter layers, hover tooltips, zoom, and 45° tilt — same rendering engine as the Streamlit app. Enable GitHub Pages from `Settings → Pages → Source: main / docs` to activate the link.
+
+---
+
 ## What is this?
 
 [BIXI](https://bixi.com) is Montreal's public bike-share system with hundreds of stations across the city. This project builds an **end-to-end demand analytics pipeline** — from raw trip data to an interactive Streamlit dashboard — that answers two questions:
@@ -54,9 +62,11 @@ The data shows two clear commute peaks: a morning spike around **8 am** and an e
 
 ### Station demand clusters across Montreal
 
-High-demand stations (red) concentrate in the downtown core, while lower-demand stations spread into residential neighborhoods.
+High-demand stations (red) concentrate in the downtown core — Vieux-Port, Plateau, and the Lachine Canal corridor — while lower-demand blue stations spread into residential neighborhoods.
 
-![BIXI station demand clusters](docs/images/station-demand-clusters.png)
+**[→ Open the interactive version](https://YOUR_GITHUB_USERNAME.github.io/bixi-demand-app/map.html)** — hover stations, scroll to zoom, right-drag to tilt.
+
+![BIXI station demand clusters](docs/images/station-demand-clusters-map.png)
 
 ---
 
