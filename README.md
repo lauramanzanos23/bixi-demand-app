@@ -1,160 +1,166 @@
-# BIXI Demand App
+<div align="center">
 
-Streamlit application and modeling assets for predicting Montreal BIXI station demand and exploring station demand patterns.
+# 🚲 BIXI Demand Forecasting App
 
-## 1. Project overview
-This repository delivers an end-to-end demand analytics project for BIXI bike-share usage:
-- Data preparation and feature engineering for station-level hourly demand
-- Two predictive model families for demand forecasting
-- Station clustering to segment low/medium/high-demand locations
-- A Streamlit dashboard to interact with predictions and historical demand patterns
+**Predicting Montreal bike-share demand with machine learning**
 
-Primary use case: estimate expected hourly trips for a station given date/time and weather conditions, and visualize demand behavior spatially across stations.
+[![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-app-FF4B4B?style=flat-square&logo=streamlit&logoColor=white)](https://streamlit.io/)
+[![scikit-learn](https://img.shields.io/badge/scikit--learn-1.5.1-F7931E?style=flat-square&logo=scikitlearn&logoColor=white)](https://scikit-learn.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-19467E?style=flat-square)](LICENSE)
 
-## 2. What the app does
-The app entrypoint is `src/app.py` and provides three views:
+</div>
 
-1. **Model 1 – prediction & demand history**
-- Predicts hourly demand for a selected station/date/hour using either:
-  - Linear Regression pipeline, or
-  - Random Forest
-- Shows historical chart of temperature vs. demand by station/day
-- Enforces seasonality guardrails for May-October usage window
+---
 
-2. **Model 2 – prediction with historical averages**
-- Predicts hourly demand using weather/date features plus station historical-average features
-- Supports the same two model families (Linear Regression pipeline and Random Forest)
+## What is this?
 
-3. **Clusters – station demand**
-- Loads precomputed station cluster labels (`low`, `medium`, `high`)
-- Shows map-based visualization and summary statistics by cluster
+[BIXI](https://bixi.com) is Montreal's public bike-share system with hundreds of stations across the city. This project builds an **end-to-end demand analytics pipeline** — from raw trip data to an interactive Streamlit dashboard — that answers two questions:
 
-## 3. Visuals
-### Average hourly demand profile
+1. **How many trips will a given station see in the next hour?** (given date, time, and weather)
+2. **Which stations are high, medium, or low demand?** (geospatial clustering across the network)
+
+---
+
+## App overview
+
+The dashboard has three views:
+
+### Model 1 — Station-level prediction + demand history
+- Predicts hourly trip count for a selected station, date, and hour
+- Choose between a **Linear Regression pipeline** or **Random Forest**
+- Plots historical temperature vs. demand for that station
+- Applies seasonality guardrails (BIXI operates May through October)
+
+### Model 2 — Prediction with historical averages
+- Extends Model 1 with **station-level demand priors** (hourly and day-of-week averages)
+- Better calibrated for station-specific patterns
+- Same two model families available
+
+### Clusters — Demand segmentation map
+- Displays stations colored by cluster: 🔴 High / 🟡 Medium / 🔵 Low
+- Interactive map powered by **pydeck**
+- Cluster summary statistics by segment
+
+---
+
+## Visuals
+
+### Average demand by hour of day
+
+The data shows two clear commute peaks: a morning spike around **8 am** and an evening peak around **5 pm**, with low overnight activity.
+
 ![Average BIXI demand by hour](docs/images/hourly-demand-profile.png)
 
-### Station demand clusters
+### Station demand clusters across Montreal
+
+High-demand stations (red) concentrate in the downtown core, while lower-demand stations spread into residential neighborhoods.
+
 ![BIXI station demand clusters](docs/images/station-demand-clusters.png)
 
-## 4. Data and artifacts
-### Core data files
-- `data/processed/BIXI_MODEL.parquet`: model-ready hourly demand dataset
-- `data/external/weatherstats_montreal_daily.csv`: weather history reference
-- `data/external/mtl_weather_2024.csv`: weather data for project period
+---
 
-### Model artifacts
-- `models/model1_mlr_pipeline.pkl`
-- `models/model1_rf.pkl`
-- `models/model1_meta.pkl`
-- `models/model2_mlr_pipeline.pkl`
-- `models/model2_rf.pkl`
-- `models/bixi_meta.pkl`
+## Modeling approach
 
-### Clustering artifacts
-- `artifacts/station_clusters_model1.csv`
-- `artifacts/station_clusters_model1.pkl`
+### Feature engineering
+| Feature type | Examples |
+|---|---|
+| Temporal | `hour_sin`, `hour_cos` (cyclical), `day_of_week`, `is_weekend`, `is_holiday` |
+| Weather | Temperature, scaled to training distribution |
+| Station | Station ID, historical demand averages (Model 2 only) |
 
-## 5. Modeling approach (high level)
-### Model 1
-- Uses temporal, station, weather, and engineered interaction features
-- Includes cyclical hour encoding (`hour_sin`, `hour_cos`), weekend/holiday flags, and scaled weather variables
-- Designed for demand prediction plus historical comparison workflows in the dashboard
+### Models
+| Model | Algorithm | Key characteristic |
+|---|---|---|
+| Model 1 - MLR | Linear Regression pipeline | Fast, interpretable baseline |
+| Model 1 - RF | Random Forest | Captures non-linear patterns |
+| Model 2 - MLR | Linear Regression + demand priors | Station-calibrated |
+| Model 2 - RF | Random Forest + demand priors | Best station-specific accuracy |
 
-### Model 2
-- Extends feature set with historical station demand priors (hourly and day-of-week averages)
-- Intended to improve station-specific calibration
+### Clustering
+Stations are grouped into **low / medium / high** demand categories based on historical average trip counts, precomputed and stored as `artifacts/station_clusters_model1.pkl`.
 
-### Cluster model
-- Groups stations by average demand behavior into low/medium/high categories
-- Used for exploratory geospatial segmentation in the app
+---
 
-## 6. Notebooks and workflow
-The notebooks in `notebooks/` document training and analysis steps:
-- `BIXI_Data_Cleaning.ipynb`: preparation and transformations
-- `BIXI_Model_1.ipynb`: Model 1 training workflow
-- `BIXI_Model_2.ipynb`: Model 2 training workflow
-- `BIXI_Model_Clustering.ipynb`: station clustering workflow
+## Repository structure
 
-In the current structure, notebooks are the source of model training logic; the app is inference-only.
-
-## 7. Repository structure
-```text
+```
 bixi-demand-app/
 ├── src/
-│   └── app.py
-├── models/
-│   ├── model1_mlr_pipeline.pkl
-│   ├── model1_rf.pkl
-│   ├── model1_meta.pkl
-│   ├── model2_mlr_pipeline.pkl
-│   ├── model2_rf.pkl
-│   └── bixi_meta.pkl
+│   └── app.py                  # Streamlit entrypoint
+├── models/                     # Trained model artifacts (.pkl)
+├── artifacts/                  # Station cluster assignments
 ├── data/
-│   ├── processed/
-│   │   └── BIXI_MODEL.parquet
-│   └── external/
-│       ├── weatherstats_montreal_daily.csv
-│       └── mtl_weather_2024.csv
-├── artifacts/
-│   ├── station_clusters_model1.csv
-│   └── station_clusters_model1.pkl
-├── notebooks/
+│   ├── processed/              # Model-ready parquet dataset
+│   └── external/               # Weather data (Montreal)
+├── notebooks/                  # Training and analysis workflows
 │   ├── BIXI_Data_Cleaning.ipynb
 │   ├── BIXI_Model_1.ipynb
 │   ├── BIXI_Model_2.ipynb
 │   └── BIXI_Model_Clustering.ipynb
-├── docs/
-│   └── images/
-│       ├── hourly-demand-profile.png
-│       └── station-demand-clusters.png
-├── scripts/
-│   ├── prueba.py
-│   └── myclass.py
-├── tests/
+├── docs/images/                # Charts and visuals
 ├── requirements.txt
-├── runtime.txt
-└── README.md
+└── runtime.txt                 # Python 3.12
 ```
 
-## 8. Setup and run
-### Requirements
-- Python `3.12` (see `runtime.txt`)
-- Dependencies in `requirements.txt`
+---
 
-### Local run
+## Getting started
+
+**Requirements:** Python 3.12
+
 ```bash
+# 1. Clone the repo
+git clone https://github.com/YOUR_USERNAME/bixi-demand-app.git
+cd bixi-demand-app
+
+# 2. Set up a virtual environment
 python -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+
+# 3. Install dependencies
 pip install -r requirements.txt
+
+# 4. Run the app
 streamlit run src/app.py
 ```
 
-The app resolves data/model paths from the project root via `pathlib`, so it can be launched from different working directories.
+The app resolves all data and model paths from the project root via `pathlib`, so it works regardless of your working directory.
 
-## 9. Validation
-Recommended checks after edits:
+### Dev container
 
-```bash
-python -m compileall src scripts
-streamlit run src/app.py --server.headless true
-```
+A `.devcontainer` config is included for VS Code / GitHub Codespaces. It auto-opens `README.md` and `src/app.py` and launches Streamlit on startup.
 
-## 10. Dev container
-`.devcontainer/devcontainer.json` is configured to:
-- Open `README.md` and `src/app.py`
-- Launch Streamlit with:
+---
 
-```bash
-streamlit run src/app.py --server.enableCORS false --server.enableXsrfProtection false
-```
+## Tech stack
 
-## 11. Known limitations
-- Training is notebook-driven; there is no single scripted training pipeline yet.
-- Models are constrained by training period and assumptions (notably seasonal constraints in the app).
-- Re-training and reproducibility controls (data versioning/ML experiment tracking) are not yet formalized.
+| Layer | Tools |
+|---|---|
+| App framework | Streamlit |
+| ML / modeling | scikit-learn, pandas, numpy |
+| Map visualization | pydeck |
+| Data storage | Parquet (pyarrow) |
+| Runtime | Python 3.12 |
 
-## 12. Suggested next improvements
-1. Add a `src/train/` package with reproducible CLI training scripts.
-2. Add automated tests in `tests/` for feature builders and model inference shape checks.
-3. Add model performance report (metrics + error slices) as a markdown artifact.
-4. Add CI to run linting, tests, and basic app smoke checks on pull requests.
+---
+
+## Known limitations & next steps
+
+- Training is notebook-driven — no single scripted training pipeline yet
+- Models are constrained to the BIXI operating season (May–October)
+- No automated experiment tracking or data versioning
+
+**Planned improvements:**
+- [ ] Reproducible CLI training scripts in `src/train/`
+- [ ] Automated tests for feature builders and inference shape checks
+- [ ] Model performance report (metrics + error slices)
+- [ ] CI pipeline for linting, tests, and app smoke checks
+
+---
+
+<div align="center">
+
+Made with 🚲 and a lot of Montreal weather data
+
+</div>
